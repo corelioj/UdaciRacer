@@ -80,28 +80,21 @@ async function handleCreateRace() {
         // TODO - Get player_id and track_id from the store
 
         const getPlayerId = () => { return store.player_id }
-        const playerId = getPlayerId()
+        getPlayerId()
         const getTrackId = () => { return store.track_id }
-        const trackId = getTrackId()
-
-        console.log('PlayerId: ', playerId, 'TrackId', trackId)
+        getTrackId()
 
         const tracksList = await getTracks()
-        console.log('tracksList:', tracksList)
-
         const racersList = await getRacers()
-        console.log('racersList:', racersList)
 
         const trackSelected = tracksList.filter((eachTrack) => {
             if (eachTrack.id == store.track_id) {
-                console.log('entrou')
                 return eachTrack
             }
 
         })
         const trackSelectedObj = (array) => {
                 const obj = array[0]
-                console.log('obj', obj)
                 return obj
             }
             // render starting UI
@@ -110,29 +103,20 @@ async function handleCreateRace() {
         // const race = TODO - invoke the API call to create the race, then save the result
         const race = await createRace(getPlayerId, getTrackId)
 
-        console.log('race: ', race)
-
         // TODO - update the store with the race id
         store.race_id = race.ID.toString()
-        console.log('store', store)
+
 
         // The race has been created, now start the countdown
         // TODO - call the async function runCountdown
-
         await runCountdown()
 
         // TODO - call the async function startRace
-
-
-        const initRace = await startRace((race.ID - 1).toString())
-
-        console.log('start race: ', initRace)
+        await startRace((race.ID - 1).toString())
 
         // TODO - call the async function runRace
+        await runRace((race.ID - 1).toString())
 
-        const goRace = await startRace((race.ID - 1).toString())
-
-        console.log('goRace: ', goRace)
     } catch (error) {
         console.log("an error occured while creating the race::")
         console.log(error)
@@ -142,23 +126,41 @@ async function handleCreateRace() {
 
 function runRace(raceID) {
     return new Promise(resolve => {
+        try {
             // TODO - use Javascript's built in setInterval method to get race info every 500ms
+            let raceInterval = setInterval(async() => {
 
-            /* 
-            	TODO - if the race info status property is "in-progress", update the leaderboard by calling:
+                const raceInfo = await getRace(raceID)
+                    /* 
+                	TODO - if the race info status property is "in-progress", update the leaderboard by calling:
 
-            	renderAt('#leaderBoard', raceProgress(res.positions))
-            */
+                	renderAt('#leaderBoard', raceProgress(res.positions))
+                    */
+                if (raceInfo.status == "in-progress") {
+                    renderAt('#leaderBoard', raceProgress(raceInfo.positions))
+                } else if (raceInfo.status == "finished") {
+                    /* 
+                        TODO - if the race info status property is "finished", run the following:
 
-            /* 
-            	TODO - if the race info status property is "finished", run the following:
-
-            	clearInterval(raceInterval) // to stop the interval from repeating
-            	renderAt('#race', resultsView(res.positions)) // to render the results view
-            	reslove(res) // resolve the promise
-            */
-        })
+                        clearInterval(raceInterval) // to stop the interval from repeating
+                        renderAt('#race', resultsView(res.positions)) // to render the results view
+                        reslove(res) // resolve the promise
+                    */
+                    clearInterval(raceInterval) // to stop the interval from repeating
+                    renderAt('#race', resultsView(raceInfo.positions)) // to render the results view
+                    resolve(raceInfo) // resolve the promise
+                }
+            }, 500)
+        } catch (error) {
+            console.log("an error occured while creating the race::")
+            console.log(error)
+        }
         // remember to add error handling for the Promise
+    }).catch(() => {
+        console.log("an error occured during race::")
+        console.log(error)
+    })
+
 }
 
 async function runCountdown() {
@@ -188,7 +190,6 @@ async function runCountdown() {
 }
 
 function handleSelectPodRacer(target) {
-    console.log("selected a pod", target.id)
 
     // remove class selected from all racer options
     const selected = document.querySelector('#racers .selected')
@@ -202,11 +203,9 @@ function handleSelectPodRacer(target) {
     // TODO - save the selected racer to the store
     const racerSelected = target.id
     store.player_id = racerSelected
-    console.log(store)
 }
 
 function handleSelectTrack(target) {
-    console.log("selected a track", target.id)
 
     // remove class selected from all track options
     const selected = document.querySelector('#tracks .selected')
@@ -220,12 +219,12 @@ function handleSelectTrack(target) {
     // TODO - save the selected track id to the store
     const trackSelected = target.id
     store.track_id = trackSelected
-    console.log(store)
 }
 
-function handleAccelerate() {
-    console.log("accelerate button clicked")
-        // TODO - Invoke the API call to accelerate
+async function handleAccelerate() {
+
+    // TODO - Invoke the API call to accelerate
+    await accelerate(store.race_id - 1)
 }
 
 // HTML VIEWS ------------------------------------------------
@@ -328,7 +327,8 @@ function resultsView(positions) {
 }
 
 function raceProgress(positions) {
-    let userPlayer = positions.find(e => e.id === store.player_id)
+
+    let userPlayer = positions.find(e => e.id == store.player_id)
     userPlayer.driver_name += " (you)"
 
     positions = positions.sort((a, b) => (a.segment > b.segment) ? -1 : 1)
