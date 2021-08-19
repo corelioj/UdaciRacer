@@ -1,3 +1,9 @@
+Author: Marco Aurélio Mendes Justino
+
+contact: corelioj@hotmail.com
+
+Platform used: Visual Studio Code version 1.59.0
+
 # Welcome to the One and only UdaciRacer Simulation Game
 
 ## Project Introduction
